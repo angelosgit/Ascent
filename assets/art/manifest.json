@@ -1,0 +1,107 @@
+{
+  "scale": 0.75,
+  "doc": [
+    1852,
+    3300
+  ],
+  "bg": {
+    "file": "sky.png",
+    "offset": [
+      0,
+      0
+    ],
+    "size": [
+      1389,
+      2475
+    ]
+  },
+  "mountain": {
+    "file": "slope.png",
+    "offset": [
+      0,
+      1029
+    ],
+    "size": [
+      1389,
+      1446
+    ]
+  },
+  "stone": {
+    "file": "boulder.png",
+    "offset": [
+      382,
+      806
+    ],
+    "size": [
+      798,
+      815
+    ]
+  },
+  "character": {
+    "origin": [
+      364,
+      1376
+    ],
+    "size": [
+      301,
+      736
+    ],
+    "parts": {
+      "leg1": {
+        "file": "char/leg1.png",
+        "offset": [
+          0,
+          392
+        ],
+        "size": [
+          121,
+          344
+        ]
+      },
+      "leg2": {
+        "file": "char/leg2.png",
+        "offset": [
+          86,
+          304
+        ],
+        "size": [
+          178,
+          268
+        ]
+      },
+      "body": {
+        "file": "char/body.png",
+        "offset": [
+          11,
+          158
+        ],
+        "size": [
+          157,
+          281
+        ]
+      },
+      "aarm2": {
+        "file": "char/aarm2.png",
+        "offset": [
+          6,
+          0
+        ],
+        "size": [
+          117,
+          266
+        ]
+      },
+      "aem1": {
+        "file": "char/aem1.png",
+        "offset": [
+          106,
+          144
+        ],
+        "size": [
+          194,
+          173
+        ]
+      }
+    }
+  }
+}

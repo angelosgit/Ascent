@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "The Ascent",
+    "slug": "the-ascent",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FBEBD2",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FBEBD2"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.theascent.app"
+    },
+    "android": {
+      "package": "com.theascent.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FBEBD2",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
