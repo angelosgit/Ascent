@@ -30,6 +30,16 @@
     },
     "plugins": [
       "expo-video"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c8883b64-b013-4350-b5dc-651153f25030"
+      }
+    },
+    "owner": "alinamin",
+    "runtimeVersion": "exposdk:57.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/c8883b64-b013-4350-b5dc-651153f25030"
+    }
   }
 }

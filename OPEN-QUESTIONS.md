@@ -108,6 +108,33 @@ paying "preserves their current lifetime elevation", forfeiting means starting
 it is the single design decision most likely to be regretted after launch.
 Worth an explicit yes.
 
+## The ranking
+
+### 13. There is no sign-in, so a reinstall starts over
+Identity is a random id minted on first launch and kept in AsyncStorage
+(`src/profile.js`). Deleting the app loses it, and with it the climber's place
+on the board. The alternative is an account with an email and password before
+the first session, which costs the frictionless open the brief asks for.
+
+**Worth an explicit decision.** "Sign in with Apple" is the middle ground — one
+tap, no password, survives reinstalls — but it needs a development build.
+
+### 14. Totals are only as honest as the device that reports them
+The anon key ships inside the app, as it is designed to. Row level security and
+a trigger stop a total from ever *decreasing* (except to zero, which is what
+forfeiting does), so nobody can knock a rival down the board. But nothing stops
+somebody who unpacks the bundle from inflating their own number.
+
+Making this airtight means the server, not the phone, owning the clock — every
+session opened and closed against it. That is a much larger piece of work and
+almost certainly not worth it before there is an audience to cheat in front of.
+
+### 15. Forfeiting now costs a public rank, not just a private number
+`ABANDON_RESETS_LIFETIME` is still `true`, so abandoning at the Toll wipes the
+lifetime total. That was already the harshest decision in the app (see #9); with
+a leaderboard it now means dropping from wherever they stood to last place, in
+public. **This is the one to confirm before launch.**
+
 ## Known limitations
 
 ### 10. Answering a phone call currently counts as leaving
