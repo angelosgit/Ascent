@@ -29,7 +29,7 @@ export function useAuth() {
 
       const base = getUser();
       setStatus(getSession() ? AUTH.SIGNED_IN : AUTH.SIGNED_OUT);
-      setUser(base ? { ...base, username: null } : null);
+      setUser(base ? { ...base, username: null, totalMs: 0 } : null);
       setNameStatus(PENDING);
       if (!base) return;
 
@@ -38,7 +38,7 @@ export function useAuth() {
       try {
         const row = await fetchClimber(base.id);
         if (!active) return;
-        setUser({ ...base, username: row?.username ?? null });
+        setUser({ ...base, username: row?.username ?? null, totalMs: row?.totalMs ?? 0 });
         setNameStatus(RESOLVED);
       } catch {
         // Offline: let them climb. A name cannot be checked for collisions or
@@ -88,7 +88,7 @@ export function useAuth() {
     const claim = await claimUsername(current.user.id, username, totalMs);
     if (!claim.ok) return claim;
 
-    setUser((previous) => ({ ...previous, username: normaliseUsername(username) }));
+    setUser((previous) => ({ ...previous, username: normaliseUsername(username), totalMs }));
     setNameStatus(RESOLVED);
     return { ok: true };
   }, []);

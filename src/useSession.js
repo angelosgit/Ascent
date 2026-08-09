@@ -52,6 +52,7 @@ export function useSession(account) {
   const lifetimeRef = useRef(0);      // total ms climbed, ever
   const phaseRef = useRef(PHASE.BOOT);
   const accountRef = useRef(account);
+  const accountIdRef = useRef(account?.id ?? null);
   const returnPhaseRef = useRef(PHASE.SELECT);
 
   accountRef.current = account;
@@ -127,6 +128,33 @@ export function useSession(account) {
       cancelled = true;
     };
   }, [idlePhase, setPhaseSafe]);
+
+  // --- account changes ---------------------------------------------------
+  // Signing out leaves this hook mounted, so nothing here resets on its own.
+  // Without this a new climber inherits the previous one's screen and, worse,
+  // their banked time — which would then be pushed to the new account.
+  useEffect(() => {
+    const id = account?.id ?? null;
+    if (id === accountIdRef.current) return;
+    accountIdRef.current = id;
+
+    runningRef.current = false;
+    bankedRef.current = 0;
+    durationRef.current = 0;
+    leftAtRef.current = 0;
+    awayRef.current = 0;
+    setDurationMs(0);
+    setAwayMs(0);
+    clearPending();
+
+    const serverTotal = account?.totalMs ?? 0;
+    lifetimeRef.current = serverTotal;
+    setLifetimeMs(serverTotal);
+    saveLifetimeMs(serverTotal);
+
+    returnPhaseRef.current = PHASE.SELECT;
+    setPhaseSafe(id ? PHASE.SELECT : PHASE.BOOT);
+  }, [account?.id, account?.totalMs, setPhaseSafe]);
 
   // --- the intercept -----------------------------------------------------
   useEffect(() => {
