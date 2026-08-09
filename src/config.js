@@ -73,9 +73,27 @@ export const EXIT_TOLL_PRICE = '$1.00';
 /** The app is silent by design — confirmed by the client. No audio, no haptics. */
 export const SILENT = true;
 
+/** How many climbers the ranking page shows. */
+export const LEADERBOARD_SIZE = 100;
+
+/** Longest username we accept. Kept short so the ranking rows never wrap. */
+export const USERNAME_MAX = 16;
+export const USERNAME_MIN = 3;
+
+/** Must match the OTP length configured in Supabase (Authentication → Email). */
+export const OTP_LENGTH = 6;
+
 /** Miles of *elevation* earned by `ms` of climbing. */
 export function elevationForMs(ms) {
   return Math.max(0, ms) / 3600000 * ELEVATION_MI_PER_HOUR;
+}
+
+/**
+ * The inverse of `elevationForMs`. Only used once, to migrate installs that
+ * banked miles before total time became the stored figure — see storage.js.
+ */
+export function msForElevation(miles) {
+  return Math.max(0, miles) / ELEVATION_MI_PER_HOUR * 3600000;
 }
 
 /** Miles travelled *along the slope* — elevation / sin(angle). */
@@ -85,6 +103,17 @@ export function slopeDistanceForMs(ms) {
 
 export function formatMiles(miles) {
   return miles.toFixed(5);
+}
+
+/**
+ * Total time climbed, for the ranking page. Hours are the unit that matters
+ * there — "0h 45m" reads as an achievement in a way that "45:00" does not.
+ */
+export function formatTotal(ms) {
+  const minutes = Math.floor(Math.max(0, ms) / 60000);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 export function formatClock(ms) {

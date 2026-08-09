@@ -1,16 +1,39 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { msForElevation } from './config';
 
 const LIFETIME_KEY = 'ascent.lifetimeMiles';
+const LIFETIME_MS_KEY = 'ascent.lifetimeMs';
 const PENDING_KEY = 'ascent.pendingSession';
 
-export async function loadLifetime() {
-  const raw = await AsyncStorage.getItem(LIFETIME_KEY);
-  const value = Number.parseFloat(raw ?? '0');
-  return Number.isFinite(value) ? value : 0;
+/**
+ * Total time climbed, in milliseconds — the one number this app stores.
+ *
+ * Elevation used to be the stored figure, but the ranking orders climbers by
+ * time spent, and elevation is a fixed multiple of it. Keeping both would be
+ * two numbers that can drift apart; keeping time and deriving miles cannot.
+ *
+ * Installs from before the change still hold miles, so they are converted once
+ * and the old key is left alone as a fallback.
+ */
+export async function loadLifetimeMs() {
+  const raw = await AsyncStorage.getItem(LIFETIME_MS_KEY);
+  if (raw != null) {
+    const value = Number.parseFloat(raw);
+    if (Number.isFinite(value)) return value;
+  }
+
+  const legacy = Number.parseFloat(await AsyncStorage.getItem(LIFETIME_KEY) ?? '0');
+  if (Number.isFinite(legacy) && legacy > 0) {
+    const ms = msForElevation(legacy);
+    await AsyncStorage.setItem(LIFETIME_MS_KEY, String(ms));
+    return ms;
+  }
+
+  return 0;
 }
 
-export async function saveLifetime(miles) {
-  await AsyncStorage.setItem(LIFETIME_KEY, String(miles));
+export async function saveLifetimeMs(ms) {
+  await AsyncStorage.setItem(LIFETIME_MS_KEY, String(ms));
 }
 
 /**

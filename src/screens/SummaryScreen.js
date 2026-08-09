@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatMiles } from '../config';
 import { COLORS, MONO } from '../theme';
 
-export default function SummaryScreen({ lifetime, onDone }) {
+export default function SummaryScreen({ lifetime, onDone, onRanking }) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -19,6 +19,12 @@ export default function SummaryScreen({ lifetime, onDone }) {
           One must imagine Sisyphus happy.
         </Text>
       </View>
+      <Pressable
+        onPress={onRanking}
+        style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+      >
+        <Text style={styles.secondaryLabel}>See the Ranking</Text>
+      </Pressable>
       <Pressable onPress={onDone} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
         <Text style={styles.buttonLabel}>Return</Text>
       </Pressable>
@@ -41,4 +47,13 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.75 },
   buttonLabel: { color: COLORS.cream, fontSize: 15, fontWeight: '700' },
+  secondary: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(140, 47, 18, 0.35)',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  secondaryLabel: { color: COLORS.rust, fontSize: 15, fontWeight: '700' },
 });

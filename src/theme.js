@@ -8,6 +8,7 @@ export const COLORS = {
   sand: '#F2C078',
   cream: '#FBEBD2',
   veil: 'rgba(27, 13, 7, 0.82)',
+  moss: '#5C7A46',
 };
 
 /** Tabular figures — five decimals must not jitter as they tick over. */

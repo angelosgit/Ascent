@@ -5,11 +5,12 @@ import {
   GRACE_MS,
   elevationForMs,
 } from './config';
+import { pushTotal } from './leaderboard';
 import {
   clearPending,
-  loadLifetime,
+  loadLifetimeMs,
   loadPending,
-  saveLifetime,
+  saveLifetimeMs,
   savePending,
 } from './storage';
 
@@ -19,6 +20,8 @@ export const PHASE = {
   CLIMB: 'climb',
   TOLL: 'toll',
   DONE: 'done',
+  RANKING: 'ranking',
+  PROFILE: 'profile',
 };
 
 /**
@@ -33,11 +36,12 @@ export const PHASE = {
  * backgrounded, so an interval-based timer would silently under-count exactly
  * when it matters most.
  */
-export function useSession() {
+export function useSession(account) {
   const [phase, setPhase] = useState(PHASE.BOOT);
-  const [lifetime, setLifetime] = useState(0);
+  const [lifetimeMs, setLifetimeMs] = useState(0);
   const [durationMs, setDurationMs] = useState(0);
   const [awayMs, setAwayMs] = useState(0);
+
 
   const bankedRef = useRef(0);      // ms of climbing completed before the last pause
   const resumedAtRef = useRef(0);   // wall clock at which the current run began
@@ -45,18 +49,32 @@ export function useSession() {
   const leftAtRef = useRef(0);
   const awayRef = useRef(0);        // time away, frozen at the moment they returned
   const durationRef = useRef(0);
-  const lifetimeRef = useRef(0);
+  const lifetimeRef = useRef(0);      // total ms climbed, ever
   const phaseRef = useRef(PHASE.BOOT);
+  const accountRef = useRef(account);
+  const returnPhaseRef = useRef(PHASE.SELECT);
+
+  accountRef.current = account;
 
   const setPhaseSafe = useCallback((next) => {
     phaseRef.current = next;
     setPhase(next);
   }, []);
 
-  const setLifetimeSafe = useCallback((miles) => {
-    lifetimeRef.current = miles;
-    setLifetime(miles);
-    saveLifetime(miles);
+  /**
+   * Bank a new total.
+   *
+   * The device write is awaited-in-spirit and the server push is not: the
+   * ranking is allowed to lag, but the climber's own number never is. A failed
+   * push leaves the local total correct and is retried on the next climb.
+   */
+  const setLifetimeSafe = useCallback((ms) => {
+    lifetimeRef.current = ms;
+    setLifetimeMs(ms);
+    saveLifetimeMs(ms);
+
+    const { id, username } = accountRef.current ?? {};
+    if (id && username) pushTotal(id, username, ms).catch(() => {});
   }, []);
 
   /** Milliseconds climbed so far, clamped to the chosen duration. */
@@ -79,14 +97,16 @@ export function useSession() {
     runningRef.current = true;
   }, []);
 
+  const idlePhase = useCallback(() => PHASE.SELECT, []);
+
   // --- restore -----------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [saved, pending] = await Promise.all([loadLifetime(), loadPending()]);
+      const [saved, pending] = await Promise.all([loadLifetimeMs(), loadPending()]);
       if (cancelled) return;
       lifetimeRef.current = saved;
-      setLifetime(saved);
+      setLifetimeMs(saved);
 
       if (pending) {
         // They left mid-climb and never came back — force-quit, reboot, or just
@@ -100,13 +120,13 @@ export function useSession() {
         setAwayMs(awayRef.current);
         setPhaseSafe(PHASE.TOLL);
       } else {
-        setPhaseSafe(PHASE.SELECT);
+        setPhaseSafe(idlePhase());
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [setPhaseSafe]);
+  }, [idlePhase, setPhaseSafe]);
 
   // --- the intercept -----------------------------------------------------
   useEffect(() => {
@@ -166,7 +186,7 @@ export function useSession() {
   /** Bank what they climbed and end the session — after a successful purchase. */
   const payAndExit = useCallback(() => {
     clearPending();
-    setLifetimeSafe(lifetimeRef.current + elevationForMs(readElapsed()));
+    setLifetimeSafe(lifetimeRef.current + readElapsed());
     runningRef.current = false;
     setPhaseSafe(PHASE.DONE);
   }, [readElapsed, setLifetimeSafe, setPhaseSafe]);
@@ -176,23 +196,38 @@ export function useSession() {
     if (ABANDON_RESETS_LIFETIME) setLifetimeSafe(0);
     bankedRef.current = 0;
     runningRef.current = false;
-    setPhaseSafe(PHASE.SELECT);
-  }, [setLifetimeSafe, setPhaseSafe]);
+    setPhaseSafe(idlePhase());
+  }, [idlePhase, setLifetimeSafe, setPhaseSafe]);
 
   /** The whole duration was served — the only way to gain elevation for free. */
   const complete = useCallback(() => {
     if (phaseRef.current !== PHASE.CLIMB) return;
     clearPending();
-    setLifetimeSafe(lifetimeRef.current + elevationForMs(durationRef.current));
+    setLifetimeSafe(lifetimeRef.current + durationRef.current);
     runningRef.current = false;
     setPhaseSafe(PHASE.DONE);
   }, [setLifetimeSafe, setPhaseSafe]);
 
-  const dismissSummary = useCallback(() => setPhaseSafe(PHASE.SELECT), [setPhaseSafe]);
+  const dismissSummary = useCallback(() => setPhaseSafe(idlePhase()), [idlePhase, setPhaseSafe]);
+
+  /** Ranking and profile are detours, so remember where to return to. */
+  const openDetour = useCallback((next) => {
+    returnPhaseRef.current = phaseRef.current;
+    setPhaseSafe(next);
+  }, [setPhaseSafe]);
+
+  const openRanking = useCallback(() => openDetour(PHASE.RANKING), [openDetour]);
+  const openProfile = useCallback(() => openDetour(PHASE.PROFILE), [openDetour]);
+
+  const closeDetour = useCallback(() => {
+    const back = returnPhaseRef.current;
+    setPhaseSafe(back === PHASE.RANKING || back === PHASE.PROFILE ? idlePhase() : back);
+  }, [idlePhase, setPhaseSafe]);
 
   return {
     phase,
-    lifetime,
+    lifetimeMs,
+    lifetime: elevationForMs(lifetimeMs),
     durationMs,
     awayMs,
     inGrace: awayMs < GRACE_MS,
@@ -203,5 +238,8 @@ export function useSession() {
     abandon,
     complete,
     dismissSummary,
+    openRanking,
+    openProfile,
+    closeDetour,
   };
 }

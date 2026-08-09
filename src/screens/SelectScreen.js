@@ -1,10 +1,11 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { DURATIONS_MIN, formatMiles } from '../config';
+import { DURATIONS_MIN, formatMiles, formatTotal } from '../config';
+import { initialOf } from './ProfileScreen';
 import { COLORS, MONO } from '../theme';
 
-export default function SelectScreen({ lifetime, onBegin }) {
+export default function SelectScreen({ lifetime, lifetimeMs, account, onBegin, onRanking, onProfile }) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -15,6 +16,7 @@ export default function SelectScreen({ lifetime, onBegin }) {
         <Text style={styles.blurb}>
           The endless climb requires your absolute concentration.
         </Text>
+
       </View>
 
       <View>
@@ -23,6 +25,7 @@ export default function SelectScreen({ lifetime, onBegin }) {
           {formatMiles(lifetime)}
           <Text style={styles.lifetimeUnit}>  MI</Text>
         </Text>
+        <Text style={styles.lifetimeTime}>{formatTotal(lifetimeMs)} CLIMBED</Text>
       </View>
 
       <View>
@@ -37,6 +40,26 @@ export default function SelectScreen({ lifetime, onBegin }) {
             <Text style={styles.optionUnit}>MINUTES</Text>
           </Pressable>
         ))}
+
+        <Pressable
+          onPress={onRanking}
+          style={({ pressed }) => [styles.ranking, pressed && styles.rankingPressed]}
+        >
+          <Text style={styles.rankingLabel}>See the Ranking</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onProfile}
+          accessibilityRole="button"
+          accessibilityLabel="Your account"
+          style={({ pressed }) => [styles.account, pressed && styles.rankingPressed]}
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarLetter}>{initialOf(account?.username)}</Text>
+          </View>
+          <Text style={styles.accountName} numberOfLines={1}>{account?.username ?? 'Your account'}</Text>
+          <Text style={styles.accountHint}>Account</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -50,6 +73,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   kicker: { color: COLORS.ember, fontSize: 11, fontWeight: '800', letterSpacing: 4 },
+  account: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: 'rgba(140, 47, 18, 0.07)',
+  },
+  accountName: { flex: 1, color: COLORS.ink, fontFamily: MONO, fontSize: 15 },
+  accountHint: { color: COLORS.ember, fontSize: 12, fontWeight: '700' },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarPressed: { opacity: 0.7 },
+  avatarLetter: { color: COLORS.cream, fontSize: 14, fontWeight: '700' },
+  ranking: { paddingVertical: 14, alignItems: 'center', marginTop: 6 },
+  rankingPressed: { opacity: 0.6 },
+  rankingLabel: { color: COLORS.rust, fontSize: 14, fontWeight: '700', letterSpacing: 0.3 },
+  lifetimeTime: { color: COLORS.rust, fontFamily: MONO, fontSize: 11, marginTop: 6, letterSpacing: 1 },
   title: { color: COLORS.ink, fontSize: 34, fontWeight: '700', marginTop: 12 },
   blurb: { color: COLORS.rust, fontSize: 15, lineHeight: 22, marginTop: 10, maxWidth: 280 },
   lifetimeLabel: { color: COLORS.rust, fontSize: 10, letterSpacing: 2.5, fontWeight: '700' },
