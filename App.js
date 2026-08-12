@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import TollModal from './src/components/TollModal';
 import ClimbScreen from './src/screens/ClimbScreen';
@@ -42,6 +42,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <View style={styles.page}>
       <View style={styles.root}>
         <StatusBar style="dark" />
 
@@ -111,11 +112,36 @@ export default function App() {
           </>
         )}
       </View>
+      </View>
     </SafeAreaProvider>
   );
 }
 
+/**
+ * On the web the app is still a phone screen, so it is drawn inside a phone
+ * shaped frame rather than stretched across a desktop window.
+ */
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.cream },
+  page: {
+    flex: 1,
+    backgroundColor: Platform.OS === 'web' ? COLORS.ink : COLORS.cream,
+    alignItems: 'center',
+    ...Platform.select({ web: { padding: 20 }, default: {} }),
+  },
+  root: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: COLORS.cream,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        maxWidth: 390,
+        borderRadius: 40,
+        borderWidth: 8,
+        borderColor: '#0E0703',
+      },
+      default: {},
+    }),
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

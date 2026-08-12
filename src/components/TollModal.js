@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { EXIT_TOLL_PRICE, GRACE_MS, elevationForMs, formatMiles } from '../config';
-import { purchaseExitToll } from '../payments';
+import { PURCHASE, fetchTollPrice, purchaseExitToll } from '../payments';
 import { COLORS, MONO } from '../theme';
 
 /**
@@ -27,21 +28,39 @@ export default function TollModal({
   onAbandon,
 }) {
   const [busy, setBusy] = useState(false);
+  const [price, setPrice] = useState(null);
+  const [error, setError] = useState(null);
   const atRisk = elevationForMs(elapsedMs);
+
+  // Apple rejects a hard-coded price: it must come from the store so every
+  // region sees its own currency. The constant is only a fallback.
+  useEffect(() => {
+    if (!visible) return;
+    let active = true;
+    fetchTollPrice().then((value) => {
+      if (active && value) setPrice(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, [visible]);
 
   const pay = async () => {
     if (busy) return;
     setBusy(true);
+    setError(null);
     try {
       const result = await purchaseExitToll();
-      if (result.ok) onPaid();
+      if (result.status === PURCHASE.OK) onPaid();
+      else if (result.status === PURCHASE.UNAVAILABLE) setError('Purchases are unavailable in this build.');
+      else if (result.status === PURCHASE.FAILED) setError('The payment did not go through.');
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => {}}>
+    <Overlay visible={visible}>
       <View style={styles.veil}>
         <View style={styles.card}>
           <Text style={styles.kicker}>THE CLIMB WAS INTERRUPTED</Text>
@@ -63,11 +82,13 @@ export default function TollModal({
             <Action primary label="Continue the Climb" onPress={onContinue} disabled={busy} />
           )}
           <Action
-            label={busy ? 'Processing…' : `Pay to Exit  ·  ${EXIT_TOLL_PRICE}`}
+            label={busy ? 'Processing…' : `Pay to Exit  ·  ${price ?? EXIT_TOLL_PRICE}`}
             onPress={pay}
             disabled={busy}
             trailing={busy ? <ActivityIndicator size="small" color={COLORS.cream} /> : null}
           />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
           <Action label="Abandon & Forfeit" danger onPress={onAbandon} disabled={busy} />
 
           <Text style={styles.footnote}>
@@ -75,6 +96,23 @@ export default function TollModal({
           </Text>
         </View>
       </View>
+    </Overlay>
+  );
+}
+
+/**
+ * React Native's Modal portals to the document body on web, which puts it
+ * outside the phone frame the app is drawn inside. In the browser this is an
+ * ordinary absolutely positioned layer instead, so it stays within the frame.
+ */
+function Overlay({ visible, children }) {
+  if (Platform.OS === 'web') {
+    return visible ? <View style={styles.webOverlay}>{children}</View> : null;
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => {}}>
+      {children}
     </Modal>
   );
 }
@@ -119,6 +157,7 @@ function Action({ label, onPress, primary, danger, disabled, trailing }) {
 TollModal.GRACE_MS = GRACE_MS;
 
 const styles = StyleSheet.create({
+  webOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 10 },
   veil: {
     flex: 1,
     backgroundColor: COLORS.veil,
@@ -175,6 +214,13 @@ const styles = StyleSheet.create({
   actionLabel: { color: COLORS.rust, fontSize: 15, fontWeight: '700' },
   actionLabelPrimary: { color: COLORS.cream },
   actionLabelDanger: { color: COLORS.ember, fontWeight: '600' },
+  error: {
+    color: COLORS.ember,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 10,
+  },
   footnote: {
     color: COLORS.rust,
     fontSize: 11,
