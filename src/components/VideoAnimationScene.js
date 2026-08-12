@@ -26,7 +26,11 @@ export default function SceneVideo({ running }) {
         style={styles.video}
         nativeControls={false}
         contentFit="cover"
-
+        // Without this Safari hands the clip to the fullscreen native player
+        // the moment it starts, taking over the screen.
+        playsInline
+        allowsFullscreen={false}
+        allowsPictureInPicture={false}
       />
     </View>
   );
