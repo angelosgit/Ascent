@@ -1,17 +1,111 @@
+import { Platform } from 'react-native';
+
 /**
  * Pay to Exit.
  *
- * This sells a digital benefit, so both stores require their own in-app
- * purchase rails — Stripe or PayPal here would fail review. The real
- * implementation is a *consumable* IAP through react-native-iap or
- * expo-in-app-purchases, which needs a development build (it cannot run in Expo
- * Go) plus a configured product in App Store Connect and Play Console.
+ * A consumable purchase: it can be bought again every time a climb is
+ * interrupted, so the transaction is finished as consumable and the store is
+ * free to sell it again.
  *
- * Until the client has developer accounts and a price, this stands in for it and
- * always succeeds. The call site already treats it as async and failable, so
- * swapping the body out is the whole job.
+ * The native module is absent in Expo Go, so it is required lazily and the
+ * whole feature degrades to unavailable rather than crashing the app.
+ */
+
+export const EXIT_TOLL_SKU = 'com.theascent.app.exit_toll';
+
+export const PURCHASE = {
+  OK: 'ok',
+  CANCELLED: 'cancelled',
+  UNAVAILABLE: 'unavailable',
+  FAILED: 'failed',
+};
+
+let iap = null;
+let connected = null;
+
+function load() {
+  if (iap !== null) return iap;
+  try {
+    // eslint-disable-next-line global-require
+    iap = require('expo-iap');
+  } catch {
+    iap = false;
+  }
+  return iap;
+}
+
+export const isAvailable = () => Boolean(load());
+
+async function connect() {
+  const module = load();
+  if (!module) return false;
+  connected = connected ?? module.initConnection().catch(() => false);
+  return (await connected) !== false;
+}
+
+/**
+ * The store's own localised price string, e.g. "$0.99" or "0,99 €".
+ * Apple rejects apps that hard-code a price, so this is what the Toll shows.
+ */
+export async function fetchTollPrice() {
+  const module = load();
+  if (!module || !(await connect())) return null;
+
+  try {
+    const products = await module.fetchProducts({ skus: [EXIT_TOLL_SKU], type: 'in-app' });
+    const product = (products ?? []).find((item) => item.id === EXIT_TOLL_SKU) ?? products?.[0];
+    return product?.displayPrice ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Runs the purchase and resolves once the store confirms it.
+ *
+ * expo-iap reports the outcome through listeners rather than the call's return
+ * value, so those are bridged into a promise here and always torn down.
  */
 export async function purchaseExitToll() {
-  await new Promise((resolve) => setTimeout(resolve, 450));
-  return { ok: true };
+  const module = load();
+  if (!module) return { status: PURCHASE.UNAVAILABLE };
+  if (!(await connect())) return { status: PURCHASE.UNAVAILABLE };
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      updated.remove();
+      failed.remove();
+      resolve(result);
+    };
+
+    const updated = module.purchaseUpdatedListener(async (purchase) => {
+      try {
+        await module.finishTransaction({ purchase, isConsumable: true });
+        finish({ status: PURCHASE.OK });
+      } catch {
+        finish({ status: PURCHASE.FAILED });
+      }
+    });
+
+    const failed = module.purchaseErrorListener((error) => {
+      finish({
+        status: error?.code === 'user-cancelled' ? PURCHASE.CANCELLED : PURCHASE.FAILED,
+        message: error?.message,
+      });
+    });
+
+    module
+      .requestPurchase({
+        type: 'in-app',
+        request: Platform.select({
+          ios: { apple: { sku: EXIT_TOLL_SKU } },
+          android: { google: { skus: [EXIT_TOLL_SKU] } },
+          default: { apple: { sku: EXIT_TOLL_SKU } },
+        }),
+      })
+      .catch(() => finish({ status: PURCHASE.FAILED }));
+  });
 }

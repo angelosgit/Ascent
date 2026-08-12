@@ -4,6 +4,14 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
@@ -14,20 +22,27 @@
         "simulator": false
       }
     },
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
+    "testflight": {
+      "distribution": "store",
+      "channel": "preview",
+      "autoIncrement": true,
       "android": {
-        "buildType": "apk"
-      },
-      "channel": "development"
+        "buildType": "app-bundle"
+      }
     },
     "production": {
-      "autoIncrement": true,
-      "channel": "production"
+      "distribution": "store",
+      "channel": "production",
+      "autoIncrement": true
     }
   },
   "submit": {
+    "testflight": {
+      "ios": {
+        "appName": "The Ascent",
+        "bundleIdentifier": "com.theascent.app"
+      }
+    },
     "production": {}
   }
 }
