@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "backgroundColor": "#FBEBD2",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FBEBD2"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.theascent.app",
@@ -33,7 +28,15 @@
     },
     "plugins": [
       "expo-video",
-      "expo-iap"
+      "expo-iap",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FBEBD2"
+        }
+      ]
     ],
     "extra": {
       "eas": {
