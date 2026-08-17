@@ -15,7 +15,8 @@ import { COLORS } from './src/theme';
 import { PHASE, useSession } from './src/useSession';
 
 export default function App() {
-  const { status, user, ready, needsName, requestCode, verifyCode, claimName, signOut } = useAuth();
+  const { status, user, ready, needsName, requestCode, verifyCode, claimName, signOut, deleteAccount } =
+    useAuth();
   const session = useSession(user);
 
   const {
@@ -83,6 +84,7 @@ export default function App() {
                 lifetimeMs={lifetimeMs}
                 onClose={closeDetour}
                 onSignOut={signOut}
+                onDelete={deleteAccount}
               />
             )}
 

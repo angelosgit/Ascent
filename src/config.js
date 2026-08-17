@@ -83,6 +83,15 @@ export const USERNAME_MIN = 3;
 /** Must match the OTP length configured in Supabase (Authentication → Email). */
 export const OTP_LENGTH = 6;
 
+/**
+ * App review sign-in.
+ *
+ * Everyone signs in with a code emailed to them, which a store reviewer cannot
+ * receive. This single account signs in with a password instead so Apple and
+ * Google can get past the sign-in screen. No other address is affected.
+ */
+export const REVIEW_EMAIL = 'appreview@theascent.app';
+
 /** Miles of *elevation* earned by `ms` of climbing. */
 export function elevationForMs(ms) {
   return Math.max(0, ms) / 3600000 * ELEVATION_MI_PER_HOUR;

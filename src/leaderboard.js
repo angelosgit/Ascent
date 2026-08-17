@@ -45,6 +45,13 @@ export async function pushTotal(userId, username, totalMs) {
   await writeRow({ id: userId, username: normaliseUsername(username), total_ms: Math.round(totalMs) });
 }
 
+/** Removes the climber's row and their account. Irreversible. */
+export async function deleteOwnAccount() {
+  const token = await getAccessToken();
+  if (!token) throw new Error('NOT_SIGNED_IN');
+  await rest('rpc/delete_own_account', { method: 'POST', token, body: {} });
+}
+
 export async function fetchTop(limit = LEADERBOARD_SIZE) {
   const rows = await rest(
     `climbers?select=id,username,total_ms&order=total_ms.desc,updated_at.asc&limit=${limit}`,

@@ -20,6 +20,14 @@ export function verifyCode(email, token) {
   });
 }
 
+/** Password sign-in, used only by the review account. */
+export function signInWithPassword(email, password) {
+  return auth('token?grant_type=password', {
+    method: 'POST',
+    body: { email, password },
+  });
+}
+
 export function refresh(refreshToken) {
   return auth('token?grant_type=refresh_token', {
     method: 'POST',

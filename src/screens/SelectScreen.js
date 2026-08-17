@@ -11,7 +11,7 @@ export default function SelectScreen({ lifetime, lifetimeMs, account, onBegin, o
   return (
     <View style={[styles.root, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 }]}>
       <View>
-        <Text style={styles.kicker}>THE ASCENT</Text>
+        <Text style={styles.kicker}>LITTLE SISYPHUS</Text>
         <Text style={styles.title}>Hard things are worth doing.</Text>
         <Text style={styles.blurb}>
           The endless climb requires your absolute concentration.

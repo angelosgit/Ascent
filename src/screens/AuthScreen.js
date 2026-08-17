@@ -26,6 +26,7 @@ export default function AuthScreen({ onRequestCode, onVerifyCode }) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentTo, setSentTo] = useState('');
+  const [usesPassword, setUsesPassword] = useState(false);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const submittedRef = useRef('');
@@ -51,12 +52,13 @@ export default function AuthScreen({ onRequestCode, onVerifyCode }) {
         return;
       }
       setSentTo(result.email);
+      setUsesPassword(Boolean(result.usesPassword));
       setStep(STEP.CODE);
     });
 
   const submitCode = () =>
     run(async () => {
-      const invalid = validateCode(code);
+      const invalid = usesPassword ? null : validateCode(code);
       if (invalid) {
         setError(invalid);
         return;
@@ -77,10 +79,10 @@ export default function AuthScreen({ onRequestCode, onVerifyCode }) {
     });
 
   const onEmail = step === STEP.EMAIL;
-  const complete = normaliseCode(code).length === OTP_LENGTH;
+  const complete = usesPassword ? code.length > 0 : normaliseCode(code).length === OTP_LENGTH;
 
   useEffect(() => {
-    if (onEmail || !complete || busy || submittedRef.current === code) return;
+    if (onEmail || usesPassword || !complete || busy || submittedRef.current === code) return;
     submittedRef.current = code;
     submitCode();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,12 +92,16 @@ export default function AuthScreen({ onRequestCode, onVerifyCode }) {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.inner, { paddingTop: insets.top + 56, paddingBottom: insets.bottom + 32 }]}>
         <View>
-          <Text style={styles.kicker}>THE ASCENT</Text>
-          <Text style={styles.title}>{onEmail ? 'Sign in to climb' : 'Check your email'}</Text>
+          <Text style={styles.kicker}>LITTLE SISYPHUS</Text>
+          <Text style={styles.title}>
+            {onEmail ? 'Sign in to climb' : usesPassword ? 'Sign in' : 'Check your email'}
+          </Text>
           <Text style={styles.blurb}>
             {onEmail
               ? 'Enter your email and we will send you a code. No password to remember.'
-              : `We sent a ${OTP_LENGTH}-digit code to ${sentTo}.`}
+              : usesPassword
+                ? 'Enter the password for this account.'
+                : `We sent a ${OTP_LENGTH}-digit code to ${sentTo}.`}
           </Text>
         </View>
 
@@ -121,22 +127,25 @@ export default function AuthScreen({ onRequestCode, onVerifyCode }) {
             <TextInput
               value={code}
               onChangeText={(next) => {
-                setCode(normaliseCode(next));
+                setCode(usesPassword ? next : normaliseCode(next));
                 if (error) setError(null);
               }}
-              placeholder={'0'.repeat(OTP_LENGTH)}
+              placeholder={usesPassword ? 'Password' : '0'.repeat(OTP_LENGTH)}
               placeholderTextColor="rgba(140, 47, 18, 0.35)"
-              keyboardType="number-pad"
-              maxLength={OTP_LENGTH}
+              keyboardType={usesPassword ? 'default' : 'number-pad'}
+              maxLength={usesPassword ? undefined : OTP_LENGTH}
+              secureTextEntry={usesPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
               editable={!busy}
               autoFocus
-              style={[styles.input, styles.inputCentered]}
+              style={[styles.input, !usesPassword && styles.inputCentered]}
             />
           )}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          {!onEmail ? (
+          {!onEmail && !usesPassword ? (
             <Pressable onPress={resend} disabled={busy} hitSlop={10}>
               <Text style={styles.link}>Send another code</Text>
             </Pressable>
@@ -150,6 +159,7 @@ export default function AuthScreen({ onRequestCode, onVerifyCode }) {
                 setStep(STEP.EMAIL);
                 setCode('');
                 setError(null);
+                setUsesPassword(false);
                 submittedRef.current = '';
               }}
               disabled={busy}
@@ -171,7 +181,9 @@ export default function AuthScreen({ onRequestCode, onVerifyCode }) {
             {busy ? (
               <ActivityIndicator size="small" color={COLORS.cream} />
             ) : (
-              <Text style={styles.buttonLabel}>{onEmail ? 'Send me a code' : 'Verify'}</Text>
+              <Text style={styles.buttonLabel}>
+                {onEmail ? 'Send me a code' : usesPassword ? 'Sign in' : 'Verify'}
+              </Text>
             )}
           </Pressable>
         </View>

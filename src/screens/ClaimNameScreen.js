@@ -56,7 +56,7 @@ export default function ClaimNameScreen({ onSubmit }) {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.inner, { paddingTop: insets.top + 56, paddingBottom: insets.bottom + 32 }]}>
         <View>
-          <Text style={styles.kicker}>THE ASCENT</Text>
+          <Text style={styles.kicker}>LITTLE SISYPHUS</Text>
           <Text style={styles.title}>What shall we call you?</Text>
           <Text style={styles.blurb}>
             This is the name on the ranking, beside the hours you have climbed.

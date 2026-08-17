@@ -1,11 +1,36 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatMiles, formatTotal, elevationForMs } from '../config';
 import { COLORS, MONO } from '../theme';
 
-export default function ProfileScreen({ account, lifetimeMs, onClose, onSignOut }) {
+export default function ProfileScreen({ account, lifetimeMs, onClose, onSignOut, onDelete }) {
   const insets = useSafeAreaInsets();
+  const [busy, setBusy] = useState(false);
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete your account?',
+      'Your name leaves the ranking and every hour you have climbed is erased. This cannot be undone.',
+      [
+        { text: 'Keep climbing', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            try {
+              await onDelete();
+            } catch {
+              Alert.alert('Could not delete', 'Check your connection and try again.');
+            } finally {
+              setBusy(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 56, paddingBottom: insets.bottom + 24 }]}>
@@ -28,6 +53,14 @@ export default function ProfileScreen({ account, lifetimeMs, onClose, onSignOut 
         </Pressable>
         <Pressable onPress={onClose} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
           <Text style={styles.buttonLabel}>Back to the Climb</Text>
+        </Pressable>
+
+        <Pressable onPress={confirmDelete} disabled={busy} hitSlop={10}>
+          {busy ? (
+            <ActivityIndicator size="small" color={COLORS.ember} style={styles.deleting} />
+          ) : (
+            <Text style={styles.delete}>Delete account</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -86,4 +119,12 @@ const styles = StyleSheet.create({
   },
   secondaryLabel: { color: COLORS.ember, fontSize: 15, fontWeight: '700' },
   pressed: { opacity: 0.72 },
+  delete: {
+    color: COLORS.ember,
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 18,
+  },
+  deleting: { marginTop: 18 },
 });

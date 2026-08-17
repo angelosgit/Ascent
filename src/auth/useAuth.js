@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { claimUsername, fetchClimber, isUsernameTaken } from '../leaderboard';
+import { claimUsername, deleteOwnAccount, fetchClimber, isUsernameTaken } from '../leaderboard';
+import { REVIEW_EMAIL } from '../config';
 import { normaliseEmail, normaliseUsername, validateEmail, validateUsername } from '../validation';
 import * as api from './api';
 import { clearSession, getSession, getUser, restoreSession, setSession, subscribe } from './session';
@@ -62,14 +63,22 @@ export function useAuth() {
     const invalid = validateEmail(email);
     if (invalid) return { ok: false, message: invalid };
 
+    // The review account has a password instead, so nothing is sent.
+    if (email === REVIEW_EMAIL) return { ok: true, email, usesPassword: true };
+
     await api.requestCode(email, null, { create: true });
     return { ok: true, email };
   }, []);
 
-  /** Exchanges the code for a session. The name, if any, is asked for after. */
-  const verifyCode = useCallback(async (email, code) => {
-    const raw = await api.verifyCode(email, code.trim());
-    if (!raw?.access_token) return { ok: false, message: 'That code did not work. Try again.' };
+  /** Exchanges the code — or the review password — for a session. */
+  const verifyCode = useCallback(async (email, secret) => {
+    const address = normaliseEmail(email);
+    const raw =
+      address === REVIEW_EMAIL
+        ? await api.signInWithPassword(address, secret)
+        : await api.verifyCode(address, secret.trim());
+
+    if (!raw?.access_token) return { ok: false, message: 'That did not work. Try again.' };
 
     await setSession(raw);
     return { ok: true };
@@ -93,6 +102,12 @@ export function useAuth() {
     return { ok: true };
   }, []);
 
+  /** Deletes the account, then signs out — the session is dead either way. */
+  const deleteAccount = useCallback(async () => {
+    await deleteOwnAccount();
+    await clearSession();
+  }, []);
+
   const signOut = useCallback(async () => {
     const current = getSession();
     if (current) await api.signOut(current.accessToken).catch(() => {});
@@ -110,5 +125,6 @@ export function useAuth() {
     verifyCode,
     claimName,
     signOut,
+    deleteAccount,
   };
 }

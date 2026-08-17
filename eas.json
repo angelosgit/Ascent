@@ -39,8 +39,11 @@
   "submit": {
     "testflight": {
       "ios": {
-        "appName": "The Ascent",
-        "bundleIdentifier": "com.theascent.app"
+        "ascAppId": "6802393639",
+        "appleTeamId": "JHQ3UF9GL7",
+        "ascApiKeyPath": "/Users/alireza/.apple/AuthKey_27R4V2GAC8.p8",
+        "ascApiKeyId": "27R4V2GAC8",
+        "ascApiKeyIssuerId": "773311e6-a5b7-4186-b222-8c1299faa305"
       }
     },
     "production": {}
