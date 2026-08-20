@@ -4,6 +4,7 @@ import { msForElevation } from './config';
 const LIFETIME_KEY = 'ascent.lifetimeMiles';
 const LIFETIME_MS_KEY = 'ascent.lifetimeMs';
 const PENDING_KEY = 'ascent.pendingSession';
+const OWNER_KEY = 'ascent.lifetimeOwner';
 
 /**
  * Total time climbed, in milliseconds — the one number this app stores.
@@ -34,6 +35,16 @@ export async function loadLifetimeMs() {
 
 export async function saveLifetimeMs(ms) {
   await AsyncStorage.setItem(LIFETIME_MS_KEY, String(ms));
+}
+
+/** Which account the stored total belongs to, so it is never shown to another. */
+export async function loadLifetimeOwner() {
+  return AsyncStorage.getItem(OWNER_KEY);
+}
+
+export async function saveLifetimeOwner(id) {
+  if (id) await AsyncStorage.setItem(OWNER_KEY, id);
+  else await AsyncStorage.removeItem(OWNER_KEY);
 }
 
 /**

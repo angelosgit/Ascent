@@ -9,8 +9,10 @@ import { pushTotal } from './leaderboard';
 import {
   clearPending,
   loadLifetimeMs,
+  loadLifetimeOwner,
   loadPending,
   saveLifetimeMs,
+  saveLifetimeOwner,
   savePending,
 } from './storage';
 
@@ -130,9 +132,15 @@ export function useSession(account) {
   }, [idlePhase, setPhaseSafe]);
 
   // --- account changes ---------------------------------------------------
-  // Signing out leaves this hook mounted, so nothing here resets on its own.
-  // Without this a new climber inherits the previous one's screen and, worse,
-  // their banked time — which would then be pushed to the new account.
+  // Two separate questions, which used to be conflated:
+  //
+  //   1. Is this a different climber from the one whose total is stored? Only
+  //      then must the local total be discarded.
+  //   2. What is their real total? That arrives a moment later from the server,
+  //      and until it does `totalMs` is null rather than zero.
+  //
+  // Treating "not known yet" as zero is what wiped a climber's lifetime on every
+  // launch: the reset ran against the placeholder and saved it over the real one.
   useEffect(() => {
     const id = account?.id ?? null;
     if (id === accountIdRef.current) return;
@@ -146,15 +154,38 @@ export function useSession(account) {
     setDurationMs(0);
     setAwayMs(0);
     clearPending();
-
-    const serverTotal = account?.totalMs ?? 0;
-    lifetimeRef.current = serverTotal;
-    setLifetimeMs(serverTotal);
-    saveLifetimeMs(serverTotal);
-
     returnPhaseRef.current = PHASE.SELECT;
-    setPhaseSafe(id ? PHASE.SELECT : PHASE.BOOT);
-  }, [account?.id, account?.totalMs, setPhaseSafe]);
+
+    if (!id) {
+      setPhaseSafe(PHASE.BOOT);
+      return;
+    }
+
+    (async () => {
+      const owner = await loadLifetimeOwner();
+      if (owner && owner !== id) {
+        // A different climber on this device: start them at nothing.
+        lifetimeRef.current = 0;
+        setLifetimeMs(0);
+        saveLifetimeMs(0);
+      }
+      saveLifetimeOwner(id);
+      setPhaseSafe(PHASE.SELECT);
+    })();
+  }, [account?.id, setPhaseSafe]);
+
+  // The server's figure is authoritative once it arrives, but a climb banked
+  // while offline may not have reached it yet — so the higher of the two wins.
+  useEffect(() => {
+    const total = account?.totalMs;
+    if (typeof total !== 'number') return;
+
+    const merged = Math.max(total, lifetimeRef.current);
+    if (merged === lifetimeRef.current) return;
+    lifetimeRef.current = merged;
+    setLifetimeMs(merged);
+    saveLifetimeMs(merged);
+  }, [account?.totalMs]);
 
   // --- the intercept -----------------------------------------------------
   useEffect(() => {

@@ -30,7 +30,7 @@ export function useAuth() {
 
       const base = getUser();
       setStatus(getSession() ? AUTH.SIGNED_IN : AUTH.SIGNED_OUT);
-      setUser(base ? { ...base, username: null, totalMs: 0 } : null);
+      setUser(base ? { ...base, username: null, totalMs: null } : null);
       setNameStatus(PENDING);
       if (!base) return;
 
